@@ -1,0 +1,27 @@
+{
+  "globalStyle": {
+    "navigationStyle": "custom",
+    "navigationBarTextStyle": "black",
+    "enablePullDownRefresh": false
+  },
+  "pages": [
+    {
+      "path": "pages/index/index"
+    },
+    {
+      "path": "pages/second/index"
+    }
+  ],
+  "tabBar": {
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/second/index",
+        "text": "页面2"
+      }
+    ]
+  }
+}

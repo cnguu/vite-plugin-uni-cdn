@@ -1,0 +1,34 @@
+{
+  "name": "@cnguu/vite-plugin-uni-cdn",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "rimraf --glob packages/*/dist && pnpm -r --filter=./packages/* run build && pnpm -r run build-post",
+    "build:h5": "pnpm build && pnpm -C packages/playground run build:h5",
+    "build:mp-weixin": "pnpm build && pnpm -C packages/playground run build:mp-weixin",
+    "coverage": "vitest run --coverage",
+    "dev": "pnpm stub",
+    "lint": "eslint .",
+    "lint:fix": "pnpm lint --fix",
+    "play:h5": "pnpm dev && pnpm -C packages/playground run dev:h5",
+    "play:mp-weixin": "pnpm dev && pnpm -C packages/playground run dev:mp-weixin",
+    "release": "bumpp",
+    "stub": "pnpm -r --filter=./packages/* --parallel run stub",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "6.2.0",
+    "@types/node": "22.19.1",
+    "bumpp": "10.3.1",
+    "chalk": "5.6.2",
+    "consola": "3.4.2",
+    "cross-env": "10.1.0",
+    "eslint": "9.39.1",
+    "rimraf": "6.1.2",
+    "typescript": "5.9.3",
+    "unbuild": "3.6.1",
+    "vite": "5.4.21",
+    "vitest": "4.0.14"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "name": "@cnguu/vite-plugin-uni-cdn",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Vite 插件，在 UniApp 中替换资源链接为 CDN 链接",
+  "license": "MIT",
+  "homepage": "https://github.com/cnguu/vite-plugin-uni-cdn",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cnguu/vite-plugin-uni-cdn.git"
+  },
+  "bugs": "https://github.com/cnguu/vite-plugin-uni-cdn/issues",
+  "keywords": [
+    "vite",
+    "plugin",
+    "uni",
+    "uniapp",
+    "cdn"
+  ],
+  "maintainers": [
+    {
+      "name": "cnguu",
+      "email": "gu642779596@gmail.com",
+      "url": "https://github.com/cnguu"
+    }
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./index.d.ts",
+  "files": [
+    "dist",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "debug": "cross-env NODE_ENV=development unbuild --sourcemap",
+    "stub": "unbuild --stub"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0"
+  }
+}
