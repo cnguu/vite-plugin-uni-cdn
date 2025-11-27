@@ -18,17 +18,17 @@
     "test": "vitest"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "6.2.0",
-    "@types/node": "22.19.1",
-    "bumpp": "10.3.1",
-    "chalk": "5.6.2",
-    "consola": "3.4.2",
-    "cross-env": "10.1.0",
-    "eslint": "9.39.1",
-    "rimraf": "6.1.2",
-    "typescript": "5.9.3",
-    "unbuild": "3.6.1",
-    "vite": "5.4.21",
-    "vitest": "4.0.14"
+    "@antfu/eslint-config": "catalog:",
+    "@types/node": "catalog:",
+    "bumpp": "catalog:",
+    "chalk": "catalog:",
+    "consola": "catalog:",
+    "cross-env": "catalog:",
+    "eslint": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:",
+    "unbuild": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -14,27 +14,22 @@ export interface VitePluginUniCdnOption {
   cdn?: string
   /**
    * 替换资源目录，不在该目录下的资源不会替换 cdn
-   * 默认：'./static/cdn/'
    */
   sourceDir?: string
   /**
-   * 白名单
-   * 默认：['\*\*\/\*.png', '\*\*\/\*.svg', '\*\*\/\*.gif', '\*\*\/\*.jp(e)?g', '\*\*\/\*.vue', '\*\*\/\*.scss']
+   * 扫描白名单 GLOB 格式
    */
   include?: FilterPattern
   /**
-   * 黑名单
-   * 默认：['node_modules/\*\*', 'uni_modules/\*\*', 'dist/\*\*', 'unpackage/\*\*']
+   * 扫描黑名单 GLOB 格式
    */
   exclude?: FilterPattern
   /**
    * 是否删除替换资源目录对应的输出目录
-   * 默认：true
    */
   deleteOutputFiles?: boolean
   /**
    * 是否输出命令行信息
-   * 默认：true
    */
   verbose?: boolean
 }
@@ -43,17 +38,17 @@ function UniCdn(opt: VitePluginUniCdnOption): Plugin {
   const PLUGIN_NAME = 'vite-plugin-uni-cdn'
   const defaultOption: VitePluginUniCdnOption = {
     cdn: '',
-    sourceDir: './static/cdn/',
-    include: ['**/*.png', '**/*.svg', '**/*.gif', '**/*.jp(e)?g', '**/*.vue', '**/*.scss'],
-    exclude: ['node_modules/**', 'uni_modules/**', 'dist/**', 'unpackage/**'],
+    sourceDir: 'static/cdn',
+    include: ['**/*.{vue,css,scss,sass,less,styl}'],
+    exclude: ['**/node_modules/**', '**/uni_modules/**', '**/dist/**', '**/unpackage/**'],
     deleteOutputFiles: true,
     verbose: true,
   }
   const options = { ...defaultOption, ...opt }
   const cdnBasePath = options.cdn
     ? options.cdn.endsWith('/')
-      ? options.cdn
-      : `${options.cdn}/`
+      ? options.cdn.slice(0, -1)
+      : options.cdn
     : ''
   if (!cdnBasePath || !options.sourceDir) {
     return { name: PLUGIN_NAME }
@@ -82,57 +77,49 @@ function UniCdn(opt: VitePluginUniCdnOption): Plugin {
     }
   })()
   const filter = createFilter(options.include, options.exclude)
+  let isSrc = false
   let projectRoot = ''
-  let normalizedSourceDir = ''
-  let outputSourceDir = ''
+  let sourceDir = ''
+  let assetDir = ''
+  let outputDir = ''
   return {
     name: PLUGIN_NAME,
     enforce: 'pre',
-    configResolved(resolvedConfig) {
+    async configResolved(resolvedConfig) {
       projectRoot = resolvedConfig.root
-      const absoluteSourceDir = path.resolve(projectRoot, path.normalize(options.sourceDir!))
-      normalizedSourceDir = normalizePath(absoluteSourceDir)
-      logger.log(`源文件目录: ${absoluteSourceDir}`)
-      outputSourceDir = path.resolve(
-        resolvedConfig.build.outDir,
-        path.relative(projectRoot, absoluteSourceDir),
-      )
-      logger.log(`输出目录: ${outputSourceDir}`)
-    },
-    load(id) {
-      if (!filter(id))
-        return null
-      if (/\.(?:scss|vue)/.test(id))
-        return null
-      const normalizedId = normalizePath(id)
-      const relativePath = path.relative(normalizedSourceDir, normalizedId)
-      if (relativePath.startsWith('..') || path.isAbsolute(relativePath))
-        return null
+      const normalizeSourceDir = normalizePath(path.normalize(options.sourceDir!))
+      sourceDir = normalizePath(path.resolve(projectRoot, normalizeSourceDir))
       try {
-        const outputFileName = `${cdnBasePath}${relativePath}`
-        logger.pathReplace(id, outputFileName)
-        return `export default "${outputFileName}"`
+        await fs.access(sourceDir)
       }
       catch (error) {
-        logger.error(`处理文件失败: ${id}`, error as Error)
-        return null
+        const err = error as NodeJS.ErrnoException
+        logger.error('替换资源目录不存在', err)
+        return
       }
+      logger.log(`替换资源目录: ${sourceDir}`)
+      const srcIndex = normalizeSourceDir.indexOf('src')
+      isSrc = srcIndex > -1
+      assetDir = isSrc ? normalizeSourceDir.slice(srcIndex + 4) : sourceDir
+      logger.log(`匹配资源目录: ${assetDir}`)
+      outputDir = normalizePath(path.resolve(
+        resolvedConfig.build.outDir,
+        path.relative(projectRoot, path.resolve(projectRoot, assetDir)),
+      ))
+      logger.log(`输出目录: ${outputDir}`)
     },
     transform(code, id) {
-      if (!filter(id) || !code)
-        return null
-      if (!id.includes('type=style') || !id.includes('lang.scss'))
-        return null
+      if (!sourceDir || !assetDir || !filter(id) || id.endsWith('.vue') || !code) {
+        return { code }
+      }
       const transformedCode = code.replace(
         /url\(\s*['"]?([^\s'")?]+)(?:\?[^\s'")]+)?['"]?\s*\)/g,
         (match, originalPath) => {
+          if (!originalPath.includes(assetDir) || !originalPath.startsWith('/')) {
+            return match
+          }
           try {
-            const absoluteOriginalPath = path.resolve(projectRoot, originalPath.slice(1))
-            const normalizedAbsolutePath = normalizePath(absoluteOriginalPath)
-            const relativePath = path.relative(normalizedSourceDir, normalizedAbsolutePath)
-            if (relativePath.startsWith('..') || path.isAbsolute(relativePath))
-              return match
-            const outputFileName = `${cdnBasePath}${relativePath}`
+            const outputFileName = `${cdnBasePath}${isSrc ? '/src' : ''}${originalPath}`
             logger.pathReplace(originalPath, outputFileName)
             return `url('${outputFileName}')`
           }
@@ -142,25 +129,28 @@ function UniCdn(opt: VitePluginUniCdnOption): Plugin {
           }
         },
       )
-      return { code: transformedCode, map: null }
+      return { code: transformedCode }
     },
     async closeBundle() {
+      if (!sourceDir || !assetDir) {
+        return
+      }
       if (!options.deleteOutputFiles) {
         logger.log('已禁用输出文件删除功能')
         return
       }
       try {
-        await fs.access(outputSourceDir)
-        await fs.rm(outputSourceDir, { recursive: true, force: true, maxRetries: 2 })
-        logger.success(`已成功删除目录: ${outputSourceDir}`)
+        await fs.access(outputDir)
+        await fs.rm(outputDir, { recursive: true, force: true, maxRetries: 2 })
+        logger.success(`已成功删除目录: ${outputDir}`)
       }
       catch (error) {
         const err = error as NodeJS.ErrnoException
         if (err.code === 'ENOENT') {
-          logger.log(`目录不存在，跳过删除: ${outputSourceDir}`)
+          logger.log(`目录不存在，跳过删除: ${outputDir}`)
         }
         else {
-          logger.error(`删除目录失败: ${outputSourceDir}`, err)
+          logger.error(`删除目录失败: ${outputDir}`, err)
         }
       }
     },

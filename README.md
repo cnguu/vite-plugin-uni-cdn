@@ -15,12 +15,15 @@ pnpm i -D @cnguu/vite-plugin-uni-cdn
 
 ```typescript
 // vite.config.ts
-import { defineConfig } from 'vite'
 import UniCdn from '@cnguu/vite-plugin-uni-cdn'
+import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [
-    UniCdn(),
+    UniCdn({
+      cdn: 'https://cdn.jsdelivr.net/gh/cnguu/vite-plugin-uni-cdn@main/packages/playground',
+      sourceDir: 'src/static/cdn',
+    }),
   ],
 })
 ```
