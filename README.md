@@ -31,3 +31,35 @@ export default defineConfig({
 ```
 
 > 目前只支持绝对路径，如 `/static/xxx/xxx.png`
+
+## 参数
+
+### `cdn`
+
+- cdn 地址
+- 默认 `''`
+
+### `sourceDir`
+
+- 替换资源目录，不在该目录下的资源不会被替换
+- 默认 `'static/cdn'`
+
+### `include`
+
+- 扫描白名单 GLOB 格式
+- 默认 `['**/*.{vue,css,scss,sass,less,styl}']`
+
+### `exclude`
+
+- 扫描黑名单 GLOB 格式
+- 默认 `['**/node_modules/**', '**/uni_modules/**', '**/dist/**', '**/unpackage/**']`
+
+### `deleteOutputFiles`
+
+- 是否删除替换资源目录对应的输出目录
+- 默认 `true`
+
+### `verbose`
+
+- 是否输出命令行信息
+- 默认 `true`

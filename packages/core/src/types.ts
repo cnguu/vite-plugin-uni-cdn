@@ -6,7 +6,7 @@ export interface VitePluginUniCdnOption {
    */
   cdn?: string
   /**
-   * 替换资源目录，不在该目录下的资源不会替换 cdn
+   * 替换资源目录，不在该目录下的资源不会被替换
    */
   sourceDir?: string
   /**
