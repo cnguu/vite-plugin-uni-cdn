@@ -1,132 +1,11 @@
-import type { FilterPattern, Plugin } from 'vite'
+import type { Plugin } from 'vite'
+import type { VitePluginUniCdnOption } from './types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import chalk from 'chalk'
-
-import consola from 'consola'
 import { createFilter, normalizePath } from 'vite'
-
-export interface VitePluginUniCdnOption {
-  /**
-   * cdn 地址
-   */
-  cdn?: string
-  /**
-   * 替换资源目录，不在该目录下的资源不会替换 cdn
-   */
-  sourceDir?: string
-  /**
-   * 扫描白名单 GLOB 格式
-   */
-  include?: FilterPattern
-  /**
-   * 扫描黑名单 GLOB 格式
-   */
-  exclude?: FilterPattern
-  /**
-   * 是否删除替换资源目录对应的输出目录
-   */
-  deleteOutputFiles?: boolean
-  /**
-   * 是否输出命令行信息
-   */
-  verbose?: boolean
-}
-
-function createLogger(PLUGIN_NAME: string, verbose: boolean) {
-  const prefix = chalk.blue.bold(`\n[${PLUGIN_NAME}]`)
-  return {
-    log: (message: string) => {
-      if (verbose) {
-        consola.log(`${prefix} ${chalk.white(message)}`)
-      }
-    },
-    success: (message: string) => {
-      if (verbose) {
-        consola.success(`${prefix} ${chalk.green(message)}`)
-      }
-    },
-    error: (message: string, error?: Error) => {
-      consola.error(`${prefix} ${chalk.red(message)}`, error)
-    },
-    pathReplace: (from: string, to: string) => {
-      if (verbose) {
-        consola.log(`${prefix} ${chalk.gray(from)} ${chalk.yellow('======>')} ${chalk.cyan(to)}`)
-      }
-    },
-  }
-}
-
-function escapeRegExp(str: string) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-function replaceStaticToCdn(
-  code: string,
-  assetDir: string,
-  cdnBasePath: string,
-  logger: ReturnType<typeof createLogger>,
-): string {
-  const escapedStaticPrefix = escapeRegExp(assetDir)
-
-  const cssUrlRE = new RegExp(
-    `url\\(\\s*(['"]?)(${escapedStaticPrefix}[^'")\\s]+)\\1\\s*\\)`,
-    'g',
-  )
-
-  let transformed = code.replace(cssUrlRE, (match, quote: string, originalPath: string) => {
-    try {
-      if (originalPath.startsWith('http') || originalPath.startsWith('data:')) {
-        return match
-      }
-      let relativePath = originalPath.startsWith(assetDir)
-        ? originalPath.slice(assetDir.length)
-        : originalPath
-      if (!relativePath.startsWith('/')) {
-        relativePath = `/${relativePath}`
-      }
-      const outputFileName = `${cdnBasePath}${relativePath}`
-      logger.pathReplace(originalPath, outputFileName)
-      return `url(${quote || ''}${outputFileName}${quote || ''})`
-    }
-    catch (error) {
-      logger.error(`处理 CSS 失败`, error as Error)
-      return match
-    }
-  })
-
-  const stringRE = new RegExp(
-    `(['"])(${escapedStaticPrefix}[^'"]*)\\1`,
-    'g',
-  )
-
-  transformed = transformed.replace(stringRE, (match, quote: string, originalPath: string) => {
-    try {
-      if (originalPath.startsWith('http') || originalPath.startsWith('data:')) {
-        return match
-      }
-      let relativePath = originalPath.startsWith(assetDir)
-        ? originalPath.slice(assetDir.length)
-        : originalPath
-      if (!relativePath.startsWith('/')) {
-        relativePath = `/${relativePath}`
-      }
-      const outputFileName = `${cdnBasePath}${relativePath}`
-      logger.pathReplace(originalPath, outputFileName)
-      return `${quote}${outputFileName}${quote}`
-    }
-    catch (error) {
-      logger.error(`处理字符串失败`, error as Error)
-      return match
-    }
-  })
-
-  return transformed
-}
+import { createLogger, PLUGIN_NAME, replaceStaticToCdn } from './util'
 
 function UniCdn(opt: VitePluginUniCdnOption): Plugin {
-  const PLUGIN_NAME = 'vite-plugin-uni-cdn'
-
   const defaultOption: VitePluginUniCdnOption = {
     cdn: '',
     sourceDir: 'static/cdn',
@@ -147,7 +26,7 @@ function UniCdn(opt: VitePluginUniCdnOption): Plugin {
     return { name: PLUGIN_NAME }
   }
 
-  const logger = createLogger(PLUGIN_NAME, options.verbose ?? true)
+  const logger = createLogger(options.verbose ?? true)
   const filter = createFilter(options.include, options.exclude)
 
   // 是否以 src 开头（CLI 项目）
