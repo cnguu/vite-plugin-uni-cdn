@@ -79,7 +79,13 @@ function replaceStaticToCdn(
       if (originalPath.startsWith('http') || originalPath.startsWith('data:')) {
         return match
       }
-      const outputFileName = `${cdnBasePath}${originalPath}`
+      let relativePath = originalPath.startsWith(assetDir)
+        ? originalPath.slice(assetDir.length)
+        : originalPath
+      if (!relativePath.startsWith('/')) {
+        relativePath = `/${relativePath}`
+      }
+      const outputFileName = `${cdnBasePath}${relativePath}`
       logger.pathReplace(originalPath, outputFileName)
       return `url(${quote || ''}${outputFileName}${quote || ''})`
     }
@@ -99,7 +105,13 @@ function replaceStaticToCdn(
       if (originalPath.startsWith('http') || originalPath.startsWith('data:')) {
         return match
       }
-      const outputFileName = `${cdnBasePath}${originalPath}`
+      let relativePath = originalPath.startsWith(assetDir)
+        ? originalPath.slice(assetDir.length)
+        : originalPath
+      if (!relativePath.startsWith('/')) {
+        relativePath = `/${relativePath}`
+      }
+      const outputFileName = `${cdnBasePath}${relativePath}`
       logger.pathReplace(originalPath, outputFileName)
       return `${quote}${outputFileName}${quote}`
     }

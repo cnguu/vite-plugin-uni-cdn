@@ -7,7 +7,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [
     UniCdn({
-      cdn: 'https://cdn.jsdelivr.net/gh/cnguu/vite-plugin-uni-cdn@main/packages/playground/src',
+      cdn: 'https://cdn.jsdelivr.net/gh/cnguu/vite-plugin-uni-cdn@main/packages/playground/src/static/cdn',
       sourceDir: 'src/static/cdn',
     }),
     Uni(),
