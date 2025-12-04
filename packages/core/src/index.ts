@@ -5,9 +5,7 @@ import path from 'node:path'
 import { createFilter, normalizePath } from 'vite'
 import { createLogger, PLUGIN_NAME, replaceStaticToCdn } from './util'
 
-export * from './types'
-
-export function VitePluginUniCdn(opt?: VitePluginUniCdnOption): Plugin {
+export default (opt?: VitePluginUniCdnOption): Plugin => {
   const defaultOption: VitePluginUniCdnOption = {
     cdn: '',
     sourceDir: 'static/cdn',
@@ -139,4 +137,4 @@ export function VitePluginUniCdn(opt?: VitePluginUniCdnOption): Plugin {
   }
 }
 
-export default VitePluginUniCdn
+export type * from './types'
