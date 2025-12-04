@@ -7,7 +7,7 @@ import { createLogger, PLUGIN_NAME, replaceStaticToCdn } from './util'
 
 export * from './types'
 
-function VitePluginUniCdn(opt?: VitePluginUniCdnOption): Plugin {
+export function VitePluginUniCdn(opt?: VitePluginUniCdnOption): Plugin {
   const defaultOption: VitePluginUniCdnOption = {
     cdn: '',
     sourceDir: 'static/cdn',
