@@ -1,7 +1,7 @@
 {
   "name": "@cnguu/vite-plugin-uni-cdn",
   "type": "module",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "scripts": {
     "build": "rimraf --glob packages/*/dist && pnpm -r --filter=./packages/* run build && pnpm -r run build-post",
