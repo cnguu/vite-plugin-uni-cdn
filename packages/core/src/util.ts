@@ -3,6 +3,8 @@ import consola from 'consola'
 
 export const PLUGIN_NAME = 'vite-plugin-uni-cdn'
 
+export const replaceUrlCache = new Map<string, string>()
+
 export function createLogger(verbose: boolean) {
   const prefix = chalk.blue.bold(`\n[${PLUGIN_NAME}]`)
   return {
@@ -44,17 +46,21 @@ export function codeReplaceMatch(
   originalPath: string,
   css: boolean = false,
 ): string {
-  if (isInvalidOriginalPath(originalPath)) {
-    return match
+  let outputFileName = replaceUrlCache.get(originalPath) || ''
+  if (!outputFileName) {
+    if (isInvalidOriginalPath(originalPath)) {
+      return match
+    }
+    let relativePath = originalPath.startsWith(assetDir)
+      ? originalPath.slice(assetDir.length)
+      : originalPath
+    if (!relativePath.startsWith('/')) {
+      relativePath = `/${relativePath}`
+    }
+    outputFileName = `${cdnBasePath}${relativePath}`
+    replaceUrlCache.set(originalPath, outputFileName)
+    logger.pathReplace(originalPath, outputFileName)
   }
-  let relativePath = originalPath.startsWith(assetDir)
-    ? originalPath.slice(assetDir.length)
-    : originalPath
-  if (!relativePath.startsWith('/')) {
-    relativePath = `/${relativePath}`
-  }
-  const outputFileName = `${cdnBasePath}${relativePath}`
-  logger.pathReplace(originalPath, outputFileName)
   if (css) {
     return `url(${quote || ''}${outputFileName}${quote || ''})`
   }

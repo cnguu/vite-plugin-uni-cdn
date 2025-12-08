@@ -8,6 +8,15 @@
     <view class="bg-image" />
     <view class="bg-image-2" />
     <view class="bg-global" />
+    <view
+      :style="{
+        width: '200rpx',
+        height: '200rpx',
+        backgroundImage: `url('/static/cdn/4.png')`,
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }"
+    />
   </view>
 </template>
 
