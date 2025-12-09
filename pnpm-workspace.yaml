@@ -17,6 +17,7 @@ catalog:
   cross-env: 10.1.0
   eslint: 9.39.1
   rimraf: 6.1.2
+  rollup: 4.53.3
   sass: 1.78.0
   typescript: 5.9.3
   unbuild: 2.0.0

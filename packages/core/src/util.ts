@@ -1,7 +1,6 @@
 import chalk from 'chalk'
 import consola from 'consola'
-
-export const PLUGIN_NAME = 'vite-plugin-uni-cdn'
+import { PLUGIN_NAME } from './constant'
 
 export const replaceUrlCache = new Map<string, string>()
 
