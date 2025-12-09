@@ -42,7 +42,6 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "publish": "publish",
     "build": "unbuild",
     "debug": "cross-env NODE_ENV=development unbuild --sourcemap",
     "stub": "unbuild --stub"
