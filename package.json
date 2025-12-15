@@ -22,8 +22,6 @@
     "@antfu/eslint-config": "catalog:",
     "@types/node": "catalog:",
     "bumpp": "catalog:",
-    "chalk": "catalog:",
-    "consola": "catalog:",
     "cross-env": "catalog:",
     "eslint": "catalog:",
     "rimraf": "catalog:",

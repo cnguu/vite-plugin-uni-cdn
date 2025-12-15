@@ -1,28 +1,27 @@
-import chalk from 'chalk'
-import consola from 'consola'
+import type { Logger } from 'vite'
 import { PLUGIN_NAME } from './constant'
 
 export const replaceUrlCache = new Map<string, string>()
 
-export function createLogger(verbose: boolean) {
-  const prefix = chalk.blue.bold(`\n[${PLUGIN_NAME}]`)
+export function createLogger(verbose: boolean, viteLogger: Logger) {
+  const prefix = `[${PLUGIN_NAME}]`
   return {
     log: (message: string) => {
       if (verbose) {
-        consola.log(`${prefix} ${chalk.white(message)}`)
+        viteLogger.warn(`${prefix} ${message}`)
       }
     },
     success: (message: string) => {
       if (verbose) {
-        consola.success(`${prefix} ${chalk.green(message)}`)
+        viteLogger.warn(`${prefix} ${message}`)
       }
     },
     error: (message: string, error?: Error) => {
-      consola.error(`${prefix} ${chalk.red(message)}`, error)
+      viteLogger.error(`${prefix} ${message}`, { error })
     },
     pathReplace: (from: string, to: string) => {
       if (verbose) {
-        consola.log(`${prefix} ${chalk.gray(from)} ${chalk.yellow('======>')} ${chalk.cyan(to)}`)
+        viteLogger.warn(`${prefix} ${from} ======> ${to}`)
       }
     },
   }

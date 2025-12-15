@@ -11,7 +11,7 @@ export class Context {
 
   cdnBasePath: string
 
-  logger
+  logger: ReturnType<typeof createLogger>
 
   filter: (id: string | unknown) => boolean
 
@@ -43,13 +43,23 @@ export class Context {
         : this.options.cdn
       : ''
 
-    this.logger = createLogger(this.options.verbose!)
+    this.logger = createLogger(this.options.verbose!, {
+      info: () => {},
+      warn: () => {},
+      warnOnce: () => {},
+      error: () => {},
+      clearScreen: () => {},
+      hasErrorLogged: () => false,
+      hasWarned: false,
+    })
 
     this.filter = createFilter(this.options.include, this.options.exclude)
   }
 
   async configResolved(resolvedConfig: ResolvedConfig): Promise<void> {
     this.projectRoot = resolvedConfig.root
+
+    this.logger = createLogger(this.options.verbose!, resolvedConfig.logger)
 
     const relSourceDir = normalizePath(path.normalize(this.options.sourceDir!)).replace(/^\/+/, '')
 
