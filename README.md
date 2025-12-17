@@ -1,6 +1,6 @@
 # vite-plugin-uni-cdn
 
-Vite 插件，在 UniApp 中替换静态资源链接为 CDN 链接
+Vite 插件，在 uni-app 中替换静态资源链接为 CDN 链接
 
 [![release](https://badgen.net/github/release/cnguu/vite-plugin-uni-cdn)](https://github.com/cnguu/vite-plugin-uni-cdn/releases)
 [![license](https://badgen.net/github/license/cnguu/vite-plugin-uni-cdn)](https://github.com/cnguu/vite-plugin-uni-cdn/blob/main/LICENSE)
