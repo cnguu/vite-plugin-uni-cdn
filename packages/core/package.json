@@ -1,7 +1,7 @@
 {
   "name": "@cnguu/vite-plugin-uni-cdn",
   "type": "module",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Vite 插件，在 uni-app 中替换资源链接为 CDN 链接",
   "license": "MIT",
   "homepage": "https://github.com/cnguu/vite-plugin-uni-cdn",
