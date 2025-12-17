@@ -1,4 +1,6 @@
 import type { Logger } from 'vite'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { PLUGIN_NAME } from './constant'
 
 export const replaceUrlCache = new Map<string, string>()
@@ -100,4 +102,37 @@ export function replaceStaticToCdn(
   })
 
   return transformed
+}
+
+export async function generateDtsFile(dtsPath: string, logger: ReturnType<typeof createLogger>) {
+  const dtsContent = `
+/* eslint-disable */
+/* prettier-ignore */
+// @ts-nocheck
+/**
+ * 由 vite-plugin-uni-cdn 插件自动生成的类型声明文件，请勿手动修改
+ */
+declare module 'virtual:vite-plugin-uni-cdn' {
+  /**
+   * 拼接静态资源 CDN 路径
+   * @param uri 资源路径
+   * @returns 拼接后的完整 CDN 路径
+   */
+  export function withCdn(uri: string): string;
+}
+  `.trim()
+  try {
+    const dtsDir = path.dirname(dtsPath)
+    try {
+      await fs.access(dtsDir)
+    }
+    catch {
+      await fs.mkdir(dtsDir, { recursive: true })
+    }
+    await fs.writeFile(dtsPath, dtsContent, 'utf8')
+    logger.success(`类型声明文件已生成：${dtsPath}`)
+  }
+  catch (error) {
+    logger.error(`生成类型声明文件失败`, error as Error)
+  }
 }

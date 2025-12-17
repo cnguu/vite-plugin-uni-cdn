@@ -4,12 +4,12 @@ import type { VitePluginUniCdnOption } from './type'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createFilter, normalizePath } from 'vite'
-import { createLogger, replaceStaticToCdn } from './util'
+import { createLogger, generateDtsFile, replaceStaticToCdn } from './util'
 
 export class Context {
   options: VitePluginUniCdnOption
 
-  cdnBasePath: string
+  cdnBasePath: string = ''
 
   logger: ReturnType<typeof createLogger>
 
@@ -34,6 +34,7 @@ export class Context {
       exclude: ['**/node_modules/**', '**/uni_modules/**', '**/dist/**', '**/unpackage/**'],
       deleteOutputFiles: true,
       verbose: true,
+      dtsPath: '',
       ...options,
     }
 
@@ -54,6 +55,24 @@ export class Context {
     })
 
     this.filter = createFilter(this.options.include, this.options.exclude)
+  }
+
+  loadVirtualModule(): string {
+    return `
+export function withCdn(uri) {
+  const cdnBasePath = '${this.cdnBasePath}';
+  if (!cdnBasePath) {
+    return uri;
+  }
+  if (uri.startsWith('http') || uri.startsWith('data:')) {
+    return uri;
+  }
+  if (!uri.startsWith('/')) {
+    uri = '/' + uri;
+  }
+  return \`\${cdnBasePath}\${uri}\`;
+}
+    `.trim()
   }
 
   async configResolved(resolvedConfig: ResolvedConfig): Promise<void> {
@@ -93,6 +112,8 @@ export class Context {
     )
 
     this.logger.log(`输出目录: ${this.outputDir}`)
+
+    await this.generateDts()
   }
 
   transform(code: string, id: string): TransformResult {
@@ -156,5 +177,12 @@ export class Context {
         this.logger.error(`删除目录失败: ${this.outputDir}`, err)
       }
     }
+  }
+
+  private async generateDts() {
+    const dtsPath = this.options.dtsPath
+      ? normalizePath(path.resolve(this.projectRoot, this.options.dtsPath))
+      : normalizePath(path.resolve(this.projectRoot, 'uni-cdn.d.ts'))
+    await generateDtsFile(dtsPath, this.logger)
   }
 }

@@ -25,4 +25,8 @@ export interface VitePluginUniCdnOption {
    * 是否输出命令行信息
    */
   verbose?: boolean
+  /**
+   * 类型声明文件输出路径
+   */
+  dtsPath?: string
 }

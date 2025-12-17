@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite'
 import type { VitePluginUniCdnOption } from './type'
-import { PLUGIN_NAME } from './constant'
+import { PLUGIN_NAME, RESOLVED_VIRTUAL_MODULE_ID, VIRTUAL_MODULE_ID } from './constant'
 import { Context } from './context'
 
 export default (options?: VitePluginUniCdnOption): Plugin => {
@@ -12,6 +12,17 @@ export default (options?: VitePluginUniCdnOption): Plugin => {
 
   return {
     name: PLUGIN_NAME,
+    enforce: 'pre',
+    resolveId(id) {
+      if (id === VIRTUAL_MODULE_ID) {
+        return RESOLVED_VIRTUAL_MODULE_ID
+      }
+    },
+    load(id) {
+      if (id === RESOLVED_VIRTUAL_MODULE_ID) {
+        return ctx.loadVirtualModule()
+      }
+    },
     async configResolved(resolvedConfig) {
       await ctx.configResolved(resolvedConfig)
     },

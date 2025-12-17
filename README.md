@@ -63,3 +63,8 @@ export default defineConfig({
 
 - 是否输出命令行信息
 - 默认 `true`
+
+### `dstPath`
+
+- 类型声明文件输出路径
+- 默认 `uni-cdn.d.ts`

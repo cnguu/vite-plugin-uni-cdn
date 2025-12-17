@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import { withCdn } from 'virtual:vite-plugin-uni-cdn'
+import { onMounted, ref } from 'vue'
+
+const src = ref('')
+
+onMounted(() => {
+  setTimeout(() => {
+    src.value = withCdn('/static/cdn/3.png')
+  }, 2000)
+})
 </script>
 
 <template>
@@ -17,6 +27,7 @@
         backgroundRepeat: 'no-repeat',
       }"
     />
+    <image :src="src" style="width: 200rpx; height: 200rpx" />
   </view>
 </template>
 
