@@ -58,19 +58,29 @@ export class Context {
   }
 
   loadVirtualModule(): string {
+    const cdnBasePath = JSON.stringify(this.cdnBasePath)
+    const assetDir = JSON.stringify(this.assetDir || '')
     return `
 export function withCdn(uri) {
-  const cdnBasePath = '${this.cdnBasePath}';
+  const cdnBasePath = ${cdnBasePath};
+  const assetDir = ${assetDir};
   if (!cdnBasePath) {
     return uri;
   }
   if (uri.startsWith('http') || uri.startsWith('data:')) {
     return uri;
   }
-  if (!uri.startsWith('/')) {
-    uri = '/' + uri;
+  let processedUri = uri.trim();
+  if (!processedUri) {
+    return uri;
   }
-  return \`\${cdnBasePath}\${uri}\`;
+  if (!processedUri.startsWith('/')) {
+    processedUri = '/' + processedUri;
+  }
+  if (assetDir) {
+    processedUri = processedUri.replace(new RegExp('^' + assetDir), '');
+  }
+  return \`\${cdnBasePath}\${processedUri}\`;
 }
     `.trim()
   }

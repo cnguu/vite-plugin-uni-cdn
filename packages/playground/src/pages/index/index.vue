@@ -7,7 +7,7 @@ const src = ref('')
 onMounted(() => {
   setTimeout(() => {
     src.value = withCdn('/static/cdn/3.png')
-  }, 2000)
+  }, 1000)
 })
 </script>
 
