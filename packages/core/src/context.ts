@@ -59,7 +59,7 @@ export class Context {
 
   loadVirtualModule(): string {
     const cdnBasePath = JSON.stringify(this.cdnBasePath)
-    const assetDir = JSON.stringify(this.assetDir || '')
+    const assetDir = JSON.stringify(this.assetDir)
     return `
 export function withCdn(uri) {
   const cdnBasePath = ${cdnBasePath};

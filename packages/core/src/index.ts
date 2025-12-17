@@ -6,11 +6,7 @@ import { Context } from './context'
 export default (options?: VitePluginUniCdnOption): Plugin => {
   const ctx = new Context(options)
 
-  if (!ctx.cdnBasePath || !ctx.options.sourceDir) {
-    return { name: PLUGIN_NAME }
-  }
-
-  return {
+  let plugin: Plugin = {
     name: PLUGIN_NAME,
     enforce: 'pre',
     resolveId(id) {
@@ -23,6 +19,14 @@ export default (options?: VitePluginUniCdnOption): Plugin => {
         return ctx.loadVirtualModule()
       }
     },
+  }
+
+  if (!ctx.cdnBasePath || !ctx.options.sourceDir) {
+    return plugin
+  }
+
+  plugin = {
+    ...plugin,
     async configResolved(resolvedConfig) {
       await ctx.configResolved(resolvedConfig)
     },
@@ -36,6 +40,8 @@ export default (options?: VitePluginUniCdnOption): Plugin => {
       await ctx.closeBundle()
     },
   }
+
+  return plugin
 }
 
 export type * from './type'
