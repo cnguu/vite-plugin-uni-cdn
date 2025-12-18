@@ -47,6 +47,17 @@
     "stub": "unbuild --stub"
   },
   "peerDependencies": {
-    "vite": "^5.0.0"
+    "ali-oss": ">=6.0.0",
+    "vite": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ali-oss": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "ali-oss": "catalog:",
+    "rollup": "catalog:",
+    "vite": "catalog:"
   }
 }

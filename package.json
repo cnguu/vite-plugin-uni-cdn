@@ -25,10 +25,8 @@
     "cross-env": "catalog:",
     "eslint": "catalog:",
     "rimraf": "catalog:",
-    "rollup": "catalog:",
     "typescript": "catalog:",
     "unbuild": "catalog:",
-    "vite": "catalog:",
     "vitest": "catalog:"
   }
 }

@@ -21,6 +21,7 @@
     "@dcloudio/uni-automator": "catalog:",
     "@dcloudio/uni-cli-shared": "catalog:",
     "@dcloudio/vite-plugin-uni": "catalog:",
+    "ali-oss": "catalog:",
     "sass": "catalog:",
     "vite": "catalog:"
   }
