@@ -1,8 +1,10 @@
 import type { NormalizedOutputOptions, OutputBundle, TransformResult } from 'rollup'
 import type { ResolvedConfig } from 'vite'
 import type { VitePluginUniCdnOption } from './type'
-import fs from 'node:fs/promises'
+import fs from 'node:fs'
+import fsPromises from 'node:fs/promises'
 import path from 'node:path'
+import typescript from 'typescript'
 import { createFilter, normalizePath } from 'vite'
 import { createLogger, generateDtsFile, replaceStaticToCdn } from './util'
 
@@ -60,29 +62,9 @@ export class Context {
   loadVirtualModule(): string {
     const cdnBasePath = JSON.stringify(this.cdnBasePath)
     const assetDir = JSON.stringify(this.assetDir)
-    return `
-export function withCdn(uri) {
-  const cdnBasePath = ${cdnBasePath};
-  const assetDir = ${assetDir};
-  if (!cdnBasePath) {
-    return uri;
-  }
-  if (uri.startsWith('http') || uri.startsWith('data:')) {
-    return uri;
-  }
-  let processedUri = uri.trim();
-  if (!processedUri) {
-    return uri;
-  }
-  if (!processedUri.startsWith('/')) {
-    processedUri = '/' + processedUri;
-  }
-  if (assetDir) {
-    processedUri = processedUri.replace(new RegExp('^' + assetDir), '');
-  }
-  return \`\${cdnBasePath}\${processedUri}\`;
-}
-    `.trim()
+    const template = fs.readFileSync(path.resolve(__dirname, './templates/withCdn.ts'), 'utf-8')
+    const jsCode = typescript.transpileModule(template.replace(/__CDN__/g, cdnBasePath).replace(/__ASSET_DIR__/g, assetDir), {}).outputText
+    return `${jsCode.trim()}\n`
   }
 
   async configResolved(resolvedConfig: ResolvedConfig): Promise<void> {
@@ -94,7 +76,7 @@ export function withCdn(uri) {
 
     this.sourceDirAbs = normalizePath(path.resolve(this.projectRoot, relSourceDir))
     try {
-      await fs.access(this.sourceDirAbs)
+      await fsPromises.access(this.sourceDirAbs)
     }
     catch (error) {
       const err = error as NodeJS.ErrnoException
@@ -174,8 +156,8 @@ export function withCdn(uri) {
     }
 
     try {
-      await fs.access(this.outputDir)
-      await fs.rm(this.outputDir, { recursive: true, force: true, maxRetries: 2 })
+      await fsPromises.access(this.outputDir)
+      await fsPromises.rm(this.outputDir, { recursive: true, force: true, maxRetries: 2 })
       this.logger.success(`已成功删除目录: ${this.outputDir}`)
     }
     catch (error) {

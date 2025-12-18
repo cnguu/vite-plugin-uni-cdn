@@ -1,5 +1,5 @@
 import type { Logger } from 'vite'
-import fs from 'node:fs/promises'
+import fsPromises from 'node:fs/promises'
 import path from 'node:path'
 import { PLUGIN_NAME } from './constant'
 
@@ -124,12 +124,12 @@ declare module 'virtual:vite-plugin-uni-cdn' {
   try {
     const dtsDir = path.dirname(dtsPath)
     try {
-      await fs.access(dtsDir)
+      await fsPromises.access(dtsDir)
     }
     catch {
-      await fs.mkdir(dtsDir, { recursive: true })
+      await fsPromises.mkdir(dtsDir, { recursive: true })
     }
-    await fs.writeFile(dtsPath, dtsContent, 'utf8')
+    await fsPromises.writeFile(dtsPath, dtsContent, 'utf8')
     logger.success(`类型声明文件已生成：${dtsPath}`)
   }
   catch (error) {

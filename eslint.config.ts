@@ -7,4 +7,11 @@ export default antfu(
     pnpm: true,
     ignores: ['vendor'],
   },
+  [
+    {
+      rules: {
+        'unused-imports/no-unused-vars': 'warn',
+      },
+    },
+  ],
 )
