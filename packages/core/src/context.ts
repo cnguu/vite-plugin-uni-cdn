@@ -1,11 +1,10 @@
 import type { NormalizedOutputOptions, OutputBundle, TransformResult } from 'rollup'
 import type { ResolvedConfig } from 'vite'
 import type { VitePluginUniCdnOption } from './type'
-import fs from 'node:fs'
 import fsPromises from 'node:fs/promises'
 import path from 'node:path'
-import ts from 'typescript'
 import { createFilter, normalizePath } from 'vite'
+import { withCdnTemplate } from './templates/withCdn'
 import { createLogger, generateDtsFile, replaceStaticToCdn } from './util'
 
 export class Context {
@@ -62,14 +61,8 @@ export class Context {
   loadVirtualModule(): string {
     const cdnBasePath = JSON.stringify(this.cdnBasePath)
     const assetDir = JSON.stringify(this.assetDir)
-    const template = fs.readFileSync(path.resolve(__dirname, './templates/withCdn.ts'), 'utf-8')
-    const jsCode = ts.transpileModule(template.replace(/__CDN__/g, cdnBasePath).replace(/__ASSET_DIR__/g, assetDir), {
-      compilerOptions: {
-        target: ts.ScriptTarget.ESNext,
-      },
-    }).outputText
-    console.warn(jsCode)
-    return `${jsCode.trim()}\n`
+    const code = withCdnTemplate.replace(/__CDN__/g, cdnBasePath).replace(/__ASSET_DIR__/g, assetDir)
+    return `${code.trim()}\n`
   }
 
   async configResolved(resolvedConfig: ResolvedConfig): Promise<void> {

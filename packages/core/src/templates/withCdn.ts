@@ -1,4 +1,5 @@
-export function withCdn(uri: string): string {
+export const withCdnTemplate = `
+export function withCdn(uri) {
   const cdnBasePath = __CDN__
   const assetDir = __ASSET_DIR__
   if (!cdnBasePath) {
@@ -12,10 +13,11 @@ export function withCdn(uri: string): string {
     return uri
   }
   if (!processedUri.startsWith('/')) {
-    processedUri = `/${processedUri}`
+    processedUri = \`/\${processedUri}\`
   }
   if (assetDir) {
-    processedUri = processedUri.replace(new RegExp(`^${assetDir}`), '')
+    processedUri = processedUri.replace(new RegExp(\`^\${assetDir}\`), '')
   }
-  return `${cdnBasePath}${processedUri}`
+  return \`\${cdnBasePath}\${processedUri}\`
 }
+`
