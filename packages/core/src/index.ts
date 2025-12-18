@@ -30,6 +30,9 @@ export default (options?: VitePluginUniCdnOption): Plugin => {
     async configResolved(resolvedConfig) {
       await ctx.configResolved(resolvedConfig)
     },
+    async buildStart() {
+      await ctx.buildStart()
+    },
     transform(code, id) {
       return ctx.transform(code, id)
     },

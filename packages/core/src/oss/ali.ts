@@ -1,19 +1,19 @@
-import type { AliOssModule } from '../type'
+import type { AliOSSModule } from '../type'
 
-let aliOssModule: AliOssModule = null
+let aliOSSModule: AliOSSModule = null
 
-async function checkAliOssInstalled(): Promise<AliOssModule> {
-  if (aliOssModule !== null) {
-    return aliOssModule
+export async function checkAliOSSInstalled(): Promise<AliOSSModule> {
+  if (aliOSSModule !== null) {
+    return aliOSSModule
   }
   try {
-    aliOssModule = (await import('ali-oss')).default
-    return aliOssModule
+    aliOSSModule = (await import('ali-oss')).default
+    return aliOSSModule
   }
-  catch (e) {
-    if ((e as Error).message.includes('Cannot find module') || (e as Error).message.includes('Failed to resolve module specifier')) {
+  catch (error) {
+    if ((error as Error).message.includes('Cannot find module') || (error as Error).message.includes('Failed to resolve module specifier')) {
       return null
     }
-    throw e
+    throw error
   }
 }

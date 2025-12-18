@@ -1,5 +1,16 @@
-import type OSS from 'ali-oss'
+import type AliOSS from 'ali-oss'
 import type { FilterPattern } from 'vite'
+
+export interface AliOSSOption {
+  /**
+   * 是否开启
+   */
+  enable?: boolean
+  /**
+   * OSS 参数
+   */
+  options: AliOSS.Options
+}
 
 export interface VitePluginUniCdnOption {
   /**
@@ -30,6 +41,10 @@ export interface VitePluginUniCdnOption {
    * 类型声明文件输出路径
    */
   dtsPath?: string
+  /**
+   * 上传阿里云配置
+   */
+  aliOSS?: AliOSSOption
 }
 
-export type AliOssModule = typeof OSS | null
+export type AliOSSModule = typeof AliOSS | null

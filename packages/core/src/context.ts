@@ -1,9 +1,11 @@
+import type AliOSS from 'ali-oss'
 import type { NormalizedOutputOptions, OutputBundle, TransformResult } from 'rollup'
 import type { ResolvedConfig } from 'vite'
-import type { VitePluginUniCdnOption } from './type'
+import type { AliOSSModule, VitePluginUniCdnOption } from './type'
 import fsPromises from 'node:fs/promises'
 import path from 'node:path'
 import { createFilter, normalizePath } from 'vite'
+import { checkAliOSSInstalled } from './oss/ali'
 import { withCdnTemplate } from './templates/withCdn'
 import { createLogger, generateDtsFile, replaceStaticToCdn } from './util'
 
@@ -27,6 +29,8 @@ export class Context {
 
   outputDir: string = ''
 
+  aliOSSClient: AliOSS | null = null
+
   constructor(options?: VitePluginUniCdnOption) {
     this.options = {
       cdn: '',
@@ -36,6 +40,7 @@ export class Context {
       deleteOutputFiles: true,
       verbose: true,
       dtsPath: '',
+      aliOSS: void 0,
       ...options,
     }
 
@@ -104,6 +109,26 @@ export class Context {
     this.logger.log(`输出目录: ${this.outputDir}`)
 
     await this.generateDts()
+  }
+
+  async buildStart() {
+    if (!this.options.aliOSS?.enable) {
+      return
+    }
+    let AliOSSClass: AliOSSModule = null
+    try {
+      AliOSSClass = await checkAliOSSInstalled()
+    }
+    catch (error) {
+      this.logger.error('加载 ali-oss 依赖失败', error as Error)
+      return
+    }
+    if (!AliOSSClass) {
+      this.logger.error('未安装 ali-oss 依赖')
+      return
+    }
+    this.aliOSSClient = new AliOSSClass(this.options.aliOSS.options)
+    this.logger.log('ali-oss 初始化成功')
   }
 
   transform(code: string, id: string): TransformResult {
