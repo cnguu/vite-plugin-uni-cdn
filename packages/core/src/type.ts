@@ -1,3 +1,4 @@
+import type OSS from 'ali-oss'
 import type { FilterPattern } from 'vite'
 
 export interface VitePluginUniCdnOption {
@@ -30,3 +31,5 @@ export interface VitePluginUniCdnOption {
    */
   dtsPath?: string
 }
+
+export type AliOssModule = typeof OSS | null

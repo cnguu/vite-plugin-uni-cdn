@@ -33,6 +33,9 @@ catalogs:
     '@dcloudio/vite-plugin-uni':
       specifier: 3.0.0-4080720251210001
       version: 3.0.0-4080720251210001
+    '@types/ali-oss':
+      specifier: 6.16.13
+      version: 6.16.13
     '@types/node':
       specifier: 22.19.1
       version: 22.19.1
@@ -107,6 +110,9 @@ importers:
 
   packages/core:
     devDependencies:
+      '@types/ali-oss':
+        specifier: 'catalog:'
+        version: 6.16.13
       ali-oss:
         specifier: 'catalog:'
         version: 6.23.0
@@ -2329,6 +2335,9 @@ packages:
   '@tootallnate/once@1.1.2':
     resolution: {integrity: sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==}
     engines: {node: '>= 6'}
+
+  '@types/ali-oss@6.16.13':
+    resolution: {integrity: sha512-Nxxs9JYESnJcVBI9mNv+dFNnbdz15tKS15mwckZqSIM75ttb8GcNYgeNfKG9gsykSIDpbSqcSnEqxdV5vSlbDg==}
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -8520,6 +8529,8 @@ snapshots:
       picomatch: 4.0.3
 
   '@tootallnate/once@1.1.2': {}
+
+  '@types/ali-oss@6.16.13': {}
 
   '@types/babel__core@7.20.5':
     dependencies:
