@@ -1,4 +1,4 @@
-function withCdn(uri: string): string {
+export function withCdn(uri: string): string {
   const cdnBasePath = __CDN__
   const assetDir = __ASSET_DIR__
   if (!cdnBasePath) {
