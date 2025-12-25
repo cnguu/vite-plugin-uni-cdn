@@ -7,7 +7,8 @@ export async function checkAliOSSInstalled(): Promise<AliOSSModule> {
     return aliOSSModule
   }
   try {
-    aliOSSModule = (await import('ali-oss')).default
+    const importModule = (await import('ali-oss'))
+    aliOSSModule = importModule?.default || importModule
     return aliOSSModule
   }
   catch (error) {

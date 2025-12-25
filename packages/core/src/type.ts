@@ -7,9 +7,13 @@ export interface AliOSSOption {
    */
   enable?: boolean
   /**
-   * OSS 参数
+   * OSS 初始化参数
    */
   options: AliOSS.Options
+  /**
+   * OSS 上传请求头
+   */
+  headers?: object
 }
 
 export interface VitePluginUniCdnOption {

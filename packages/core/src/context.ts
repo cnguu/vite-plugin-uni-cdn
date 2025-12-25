@@ -7,7 +7,7 @@ import path from 'node:path'
 import { createFilter, normalizePath } from 'vite'
 import { checkAliOSSInstalled } from './oss/ali'
 import { withCdnTemplate } from './templates/withCdn'
-import { createLogger, generateDtsFile, replaceStaticToCdn } from './util'
+import { createLogger, escapeRegExp, isInvalidOriginalPath } from './util'
 
 export class Context {
   options: VitePluginUniCdnOption
@@ -15,19 +15,16 @@ export class Context {
   cdnBasePath: string = ''
 
   logger: ReturnType<typeof createLogger>
-
   filter: (id: string | unknown) => boolean
 
   // 是否以 src 开头（CLI 项目）
   isSrc: boolean = false
-
   projectRoot: string = ''
-
   sourceDirAbs: string = ''
-
   assetDir: string = ''
-
   outputDir: string = ''
+
+  replaceUrlCache: Map<string, string> = new Map<string, string>()
 
   aliOSSClient: AliOSS | null = null
 
@@ -127,8 +124,13 @@ export class Context {
       this.logger.error('未安装 ali-oss 依赖')
       return
     }
-    this.aliOSSClient = new AliOSSClass(this.options.aliOSS.options)
-    this.logger.log('ali-oss 初始化成功')
+    try {
+      this.aliOSSClient = new AliOSSClass(this.options.aliOSS.options)
+      this.logger.log('ali-oss 初始化成功')
+    }
+    catch (error) {
+      this.logger.error('ali-oss 初始化失败', error as Error)
+    }
   }
 
   transform(code: string, id: string): TransformResult {
@@ -141,7 +143,7 @@ export class Context {
       return { code }
     }
 
-    const transformed = replaceStaticToCdn(code, this.assetDir, this.cdnBasePath, this.logger)
+    const transformed = this.replaceStaticToCdn(code)
     return { code: transformed }
   }
 
@@ -159,11 +161,11 @@ export class Context {
           continue
         }
         const before = chunk.source
-        chunk.source = replaceStaticToCdn(before, this.assetDir, this.cdnBasePath, this.logger)
+        chunk.source = this.replaceStaticToCdn(before)
       }
       else if (chunk.type === 'chunk') {
         const before = chunk.code
-        chunk.code = replaceStaticToCdn(before, this.assetDir, this.cdnBasePath, this.logger)
+        chunk.code = this.replaceStaticToCdn(before)
       }
     }
   }
@@ -172,7 +174,151 @@ export class Context {
     if (!this.sourceDirAbs || !this.assetDir) {
       return
     }
+    await this.uploadAliOSS()
+    this.deleteOutputFiles()
+  }
 
+  private replaceStaticToCdn(
+    code: string,
+  ): string {
+    const escapedStaticPrefix = escapeRegExp(this.assetDir)
+
+    let transformed = code.replace(new RegExp(
+      `url\\(\\s*(['"]?)(${escapedStaticPrefix}[^'")\\s]+)\\1\\s*\\)`,
+      'g',
+    ), (match: string, quote: string, originalPath: string) => {
+      try {
+        return this.codeReplaceMatch(originalPath, match, quote, true)
+      }
+      catch (error) {
+        this.logger.error(`处理 CSS 失败`, error as Error)
+        return match
+      }
+    })
+
+    transformed = transformed.replace(new RegExp(
+      `(['"])(${escapedStaticPrefix}[^'"]*)\\1`,
+      'g',
+    ), (match: string, quote: string, originalPath: string) => {
+      try {
+        return this.codeReplaceMatch(originalPath, match, quote)
+      }
+      catch (error) {
+        this.logger.error(`处理字符串失败`, error as Error)
+        return match
+      }
+    })
+
+    return transformed
+  }
+
+  private codeReplaceMatch(originalPath: string, match: string, quote: string, css: boolean = false): string {
+    let outputFileName = this.replaceUrlCache.get(originalPath) || ''
+    if (!outputFileName) {
+      if (isInvalidOriginalPath(originalPath)) {
+        return match
+      }
+      let relativePath = originalPath.startsWith(this.assetDir)
+        ? originalPath.slice(this.assetDir.length)
+        : originalPath
+      if (!relativePath.startsWith('/')) {
+        relativePath = `/${relativePath}`
+      }
+      outputFileName = `${this.cdnBasePath}${relativePath}`
+      this.replaceUrlCache.set(originalPath, outputFileName)
+      this.logger.pathReplace(originalPath, outputFileName)
+    }
+    if (css) {
+      return `url(${quote || ''}${outputFileName}${quote || ''})`
+    }
+    return `${quote}${outputFileName}${quote}`
+  }
+
+  private async generateDts() {
+    const dtsPath = this.options.dtsPath
+      ? normalizePath(path.resolve(this.projectRoot, this.options.dtsPath))
+      : normalizePath(path.resolve(this.projectRoot, 'uni-cdn.d.ts'))
+    const dtsContent = `${`
+/* eslint-disable */
+/* prettier-ignore */
+// @ts-nocheck
+/**
+ * 由 vite-plugin-uni-cdn 插件自动生成的类型声明文件，请勿手动修改
+ */
+declare module 'virtual:vite-plugin-uni-cdn' {
+  /**
+   * 拼接静态资源 CDN 路径
+   * @param uri 资源路径
+   * @returns 拼接后的完整 CDN 路径
+   */
+  export function withCdn(uri: string): string;
+}
+  `.trim()}\n`
+    try {
+      const dtsDir = path.dirname(dtsPath)
+      try {
+        await fsPromises.access(dtsDir)
+      }
+      catch {
+        await fsPromises.mkdir(dtsDir, { recursive: true })
+      }
+      await fsPromises.writeFile(dtsPath, dtsContent, 'utf8')
+      this.logger.success(`类型声明文件已生成：${dtsPath}`)
+    }
+    catch (error) {
+      this.logger.error(`生成类型声明文件失败`, error as Error)
+    }
+  }
+
+  private async uploadAliOSS() {
+    if (!this.aliOSSClient) {
+      return
+    }
+
+    try {
+      await fsPromises.access(this.outputDir)
+    }
+    catch (error) {
+      const err = error as NodeJS.ErrnoException
+      if (err.code === 'ENOENT') {
+        this.logger.log(`输出目录不存在，跳过上传: ${this.outputDir}`)
+        return
+      }
+      this.logger.error(`检查输出目录失败: ${this.outputDir}`, err)
+      return
+    }
+
+    const promises = []
+    for (const originalPath of this.replaceUrlCache.keys()) {
+      const name = originalPath.slice(this.assetDir.length)
+      const file = normalizePath(path.join(this.outputDir, name))
+      try {
+        await fsPromises.access(file)
+      }
+      catch (error) {
+        const err = error as NodeJS.ErrnoException
+        if (err.code === 'ENOENT') {
+          this.logger.error(`文件不存在，跳过上传: ${file}`)
+          continue
+        }
+        this.logger.error(`检查上传文件失败: ${file}`, err)
+        continue
+      }
+      promises.push(this.aliOSSClient.put(name, file, { headers: { ...this.options.aliOSS?.headers } }))
+    }
+    if (promises.length) {
+      this.logger.log(`开始上传文件到阿里云 OSS...`)
+      try {
+        await Promise.all(promises)
+      }
+      catch (error) {
+        this.logger.error(`上传文件到阿里云失败: `, error as Error)
+      }
+      this.logger.log(`上传文件到阿里云 OSS 完成`)
+    }
+  }
+
+  private async deleteOutputFiles() {
     if (!this.options.deleteOutputFiles) {
       this.logger.log('已禁用输出文件删除功能')
       return
@@ -181,23 +327,16 @@ export class Context {
     try {
       await fsPromises.access(this.outputDir)
       await fsPromises.rm(this.outputDir, { recursive: true, force: true, maxRetries: 2 })
-      this.logger.success(`已成功删除目录: ${this.outputDir}`)
+      this.logger.success(`已成功删除输出目录: ${this.outputDir}`)
     }
     catch (error) {
       const err = error as NodeJS.ErrnoException
       if (err.code === 'ENOENT') {
-        this.logger.log(`目录不存在，跳过删除: ${this.outputDir}`)
+        this.logger.log(`输出目录不存在，跳过删除: ${this.outputDir}`)
       }
       else {
-        this.logger.error(`删除目录失败: ${this.outputDir}`, err)
+        this.logger.error(`删除输出目录失败: ${this.outputDir}`, err)
       }
     }
-  }
-
-  private async generateDts() {
-    const dtsPath = this.options.dtsPath
-      ? normalizePath(path.resolve(this.projectRoot, this.options.dtsPath))
-      : normalizePath(path.resolve(this.projectRoot, 'uni-cdn.d.ts'))
-    await generateDtsFile(dtsPath, this.logger)
   }
 }
