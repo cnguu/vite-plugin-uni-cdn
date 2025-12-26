@@ -42,10 +42,6 @@ export interface VitePluginUniCdnOption {
    */
   verbose?: boolean
   /**
-   * 类型声明文件输出路径
-   */
-  dtsPath?: string
-  /**
    * 上传阿里云配置
    */
   aliOSS?: AliOSSOption

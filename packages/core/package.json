@@ -29,14 +29,15 @@
     ".": {
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
+    },
+    "./virtual": {
+      "types": "./virtual.d.ts"
     }
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist", "virtual.d.ts"],
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

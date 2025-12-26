@@ -7,7 +7,7 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "types": ["@dcloudio/types"],
+    "types": ["@dcloudio/types", "@cnguu/vite-plugin-uni-cdn/virtual"],
     "strict": true,
     "sourceMap": true,
     "esModuleInterop": true

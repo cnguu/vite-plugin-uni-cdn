@@ -36,7 +36,6 @@ export class Context {
       exclude: ['**/node_modules/**', '**/uni_modules/**', '**/dist/**', '**/unpackage/**'],
       deleteOutputFiles: true,
       verbose: true,
-      dtsPath: '',
       aliOSS: void 0,
       ...options,
     }
@@ -104,8 +103,6 @@ export class Context {
     )
 
     this.logger.log(`输出目录: ${this.outputDir}`)
-
-    await this.generateDts()
   }
 
   async buildStart() {
@@ -232,42 +229,6 @@ export class Context {
       return `url(${quote || ''}${outputFileName}${quote || ''})`
     }
     return `${quote}${outputFileName}${quote}`
-  }
-
-  private async generateDts() {
-    const dtsPath = this.options.dtsPath
-      ? normalizePath(path.resolve(this.projectRoot, this.options.dtsPath))
-      : normalizePath(path.resolve(this.projectRoot, 'uni-cdn.d.ts'))
-    const dtsContent = `${`
-/* eslint-disable */
-/* prettier-ignore */
-// @ts-nocheck
-/**
- * 由 vite-plugin-uni-cdn 插件自动生成的类型声明文件，请勿手动修改
- */
-declare module 'virtual:vite-plugin-uni-cdn' {
-  /**
-   * 拼接静态资源 CDN 路径
-   * @param uri 资源路径
-   * @returns 拼接后的完整 CDN 路径
-   */
-  export function withCdn(uri: string): string;
-}
-  `.trim()}\n`
-    try {
-      const dtsDir = path.dirname(dtsPath)
-      try {
-        await fsPromises.access(dtsDir)
-      }
-      catch {
-        await fsPromises.mkdir(dtsDir, { recursive: true })
-      }
-      await fsPromises.writeFile(dtsPath, dtsContent, 'utf8')
-      this.logger.success(`类型声明文件已生成：${dtsPath}`)
-    }
-    catch (error) {
-      this.logger.error(`生成类型声明文件失败`, error as Error)
-    }
   }
 
   private async uploadAliOSS() {
