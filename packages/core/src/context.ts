@@ -172,7 +172,7 @@ export class Context {
       return
     }
     await this.uploadAliOSS()
-    this.deleteOutputFiles()
+    await this.deleteOutputFiles()
   }
 
   private replaceStaticToCdn(
