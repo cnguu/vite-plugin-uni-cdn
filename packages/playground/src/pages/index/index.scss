@@ -1,6 +1,4 @@
-// TODO
-// 小于40KB的文件无法替换，因为它被替换成base64了
-// 暂时找不到方法
+// 使用 postcss-url 来替换
 .bg-image-2 {
   width: 200rpx;
   height: 200rpx;

@@ -9,13 +9,6 @@ export default defineConfig({
     VitePluginUniCdn({
       cdn: 'https://cdn.jsdelivr.net/gh/cnguu/vite-plugin-uni-cdn@main/packages/playground/src/static/cdn',
       sourceDir: 'src/static/cdn',
-      aliOSS: {
-        enable: true,
-        options: {
-          accessKeyId: '123',
-          accessKeySecret: '456',
-        },
-      },
     }),
     Uni(),
   ],
