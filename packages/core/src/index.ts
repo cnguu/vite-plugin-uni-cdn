@@ -27,6 +27,9 @@ export function VitePluginUniCdn(options?: VitePluginUniCdnOption): Plugin {
 
   plugin = {
     ...plugin,
+    config() {
+      return ctx.config()
+    },
     async configResolved(resolvedConfig) {
       await ctx.configResolved(resolvedConfig)
     },
@@ -35,9 +38,6 @@ export function VitePluginUniCdn(options?: VitePluginUniCdnOption): Plugin {
     },
     transform(code, id) {
       return ctx.transform(code, id)
-    },
-    generateBundle(options, bundle) {
-      ctx.generateBundle(options, bundle)
     },
     async closeBundle() {
       await ctx.closeBundle()

@@ -1,10 +1,11 @@
 import type AliOSS from 'ali-oss'
-import type { NormalizedOutputOptions, OutputBundle, TransformResult } from 'rollup'
-import type { ResolvedConfig } from 'vite'
+import type { TransformResult } from 'rollup'
+import type { ResolvedConfig, UserConfig } from 'vite'
 import type { AliOSSModule, VitePluginUniCdnOption } from './type'
 import fsPromises from 'node:fs/promises'
 import path from 'node:path'
 import { createFilter, normalizePath } from 'vite'
+import { POSTCSS_PLUGIN_NAME } from './constant'
 import { checkAliOSSInstalled } from './oss/ali'
 import { withCdnTemplate } from './templates/withCdn'
 import { createLogger, escapeRegExp, isInvalidOriginalPath } from './util'
@@ -32,7 +33,7 @@ export class Context {
     this.options = {
       cdn: '',
       sourceDir: 'static/cdn',
-      include: ['**/*.{vue,css,scss,sass,less,styl}'],
+      include: ['**/*.vue'],
       exclude: ['**/node_modules/**', '**/uni_modules/**', '**/dist/**', '**/unpackage/**'],
       deleteOutputFiles: true,
       verbose: true,
@@ -64,6 +65,49 @@ export class Context {
     const assetDir = JSON.stringify(this.assetDir)
     const code = withCdnTemplate.replace(/__CDN__/g, cdnBasePath).replace(/__ASSET_DIR__/g, assetDir)
     return `${code.trim()}\n`
+  }
+
+  config(): Omit<UserConfig, 'plugins'> | null | void | Promise<Omit<UserConfig, 'plugins'> | null | void> {
+    if (!this.cdnBasePath || !this.options.sourceDir) {
+      return
+    }
+    const relSourceDir = normalizePath(path.normalize(this.options.sourceDir)).replace(/^\/+/, '')
+    const staticSubPath = relSourceDir.startsWith('src/') ? relSourceDir.slice('src/'.length) : relSourceDir
+    const staticDir = `/${staticSubPath.replace(/^\/+/, '')}`
+    const cdnBasePath = this.cdnBasePath
+    const urlRegex = /url\(\s*(['"]?)([^'")\s]+)\1\s*\)/g
+    return {
+      css: {
+        postcss: {
+          plugins: [
+            {
+              postcssPlugin: POSTCSS_PLUGIN_NAME,
+              Declaration: (decl) => {
+                if (!decl.value || !decl.value.startsWith('url(') || decl.value.includes('http') || decl.value.includes('data:')) {
+                  return
+                }
+                decl.value = decl.value.replace(urlRegex, (match, quote, originalPath) => {
+                  if (originalPath.startsWith(staticDir)) {
+                    let outputFileName = this.replaceUrlCache.get(originalPath)
+                    if (!outputFileName) {
+                      let relativePath = originalPath.slice(staticDir.length)
+                      if (!relativePath.startsWith('/')) {
+                        relativePath = `/${relativePath}`
+                      }
+                      outputFileName = `${cdnBasePath}${relativePath}`
+                      this.replaceUrlCache.set(originalPath, outputFileName)
+                      this.logger?.pathReplace?.(originalPath, outputFileName)
+                    }
+                    return `url(${quote}${outputFileName}${quote})`
+                  }
+                  return match
+                })
+              },
+            },
+          ],
+        },
+      },
+    }
   }
 
   async configResolved(resolvedConfig: ResolvedConfig): Promise<void> {
@@ -144,29 +188,6 @@ export class Context {
     return { code: transformed }
   }
 
-  generateBundle(options: NormalizedOutputOptions, bundle: OutputBundle): void {
-    if (!this.sourceDirAbs || !this.assetDir) {
-      return
-    }
-
-    for (const [fileName, chunk] of Object.entries(bundle)) {
-      if (chunk.type === 'asset') {
-        if (typeof chunk.source !== 'string') {
-          continue
-        }
-        if (!/\.(?:css|js|mjs|html)$/.test(fileName)) {
-          continue
-        }
-        const before = chunk.source
-        chunk.source = this.replaceStaticToCdn(before)
-      }
-      else if (chunk.type === 'chunk') {
-        const before = chunk.code
-        chunk.code = this.replaceStaticToCdn(before)
-      }
-    }
-  }
-
   async closeBundle(): Promise<void> {
     if (!this.sourceDirAbs || !this.assetDir) {
       return
@@ -178,23 +199,8 @@ export class Context {
   private replaceStaticToCdn(
     code: string,
   ): string {
-    const escapedStaticPrefix = escapeRegExp(this.assetDir)
-
-    let transformed = code.replace(new RegExp(
-      `url\\(\\s*(['"]?)(${escapedStaticPrefix}[^'")\\s]+)\\1\\s*\\)`,
-      'g',
-    ), (match: string, quote: string, originalPath: string) => {
-      try {
-        return this.codeReplaceMatch(originalPath, match, quote, true)
-      }
-      catch (error) {
-        this.logger.error(`处理 CSS 失败`, error as Error)
-        return match
-      }
-    })
-
-    transformed = transformed.replace(new RegExp(
-      `(['"])(${escapedStaticPrefix}[^'"]*)\\1`,
+    return code.replace(new RegExp(
+      `(['"])(${escapeRegExp(this.assetDir)}[^'"]*)\\1`,
       'g',
     ), (match: string, quote: string, originalPath: string) => {
       try {
@@ -205,11 +211,9 @@ export class Context {
         return match
       }
     })
-
-    return transformed
   }
 
-  private codeReplaceMatch(originalPath: string, match: string, quote: string, css: boolean = false): string {
+  private codeReplaceMatch(originalPath: string, match: string, quote: string): string {
     let outputFileName = this.replaceUrlCache.get(originalPath) || ''
     if (!outputFileName) {
       if (isInvalidOriginalPath(originalPath)) {
@@ -224,9 +228,6 @@ export class Context {
       outputFileName = `${this.cdnBasePath}${relativePath}`
       this.replaceUrlCache.set(originalPath, outputFileName)
       this.logger.pathReplace(originalPath, outputFileName)
-    }
-    if (css) {
-      return `url(${quote || ''}${outputFileName}${quote || ''})`
     }
     return `${quote}${outputFileName}${quote}`
   }

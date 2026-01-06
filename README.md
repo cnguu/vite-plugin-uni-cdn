@@ -42,7 +42,7 @@ export default defineConfig({
   - 默认 `'static/cdn'`
 - `include`
   - 扫描白名单 GLOB 格式
-  - 默认 `['**/*.{vue,css,scss,sass,less,styl}']`
+  - 默认 `['**/*.vue']`
 - `exclude`
   - 扫描黑名单 GLOB 格式
   - 默认 `['**/node_modules/**', '**/uni_modules/**', '**/dist/**', '**/unpackage/**']`
@@ -75,31 +75,4 @@ export default defineConfig({
     ]
   }
 }
-```
-
-## 其他
-
-### 使用 postcss-url 来替换
-
-```typescript
-// vite.config.ts
-import PostcssUrl from 'postcss-url'
-import { defineConfig } from 'vite'
-
-export default defineConfig({
-  css: {
-    postcss: {
-      plugins: [
-        PostcssUrl({
-          url: (asset) => {
-            if (asset.url.startsWith('/static/cdn')) {
-              return asset.url.replace('/static/cdn', 'https://cdn.jsdelivr.net/gh/cnguu/vite-plugin-uni-cdn@main/packages/playground/src/static/cdn')
-            }
-            return asset.url
-          },
-        }),
-      ],
-    },
-  }
-})
 ```
