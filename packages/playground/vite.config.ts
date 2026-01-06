@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
 
-import VitePluginUniCdn from '@cnguu/vite-plugin-uni-cdn'
+import { VitePluginUniCdn } from '@cnguu/vite-plugin-uni-cdn'
 import Uni from '@dcloudio/vite-plugin-uni'
 import { defineConfig } from 'vite'
 

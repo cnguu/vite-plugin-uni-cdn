@@ -3,7 +3,7 @@ import type { VitePluginUniCdnOption } from './type'
 import { PLUGIN_NAME, RESOLVED_VIRTUAL_MODULE_ID, VIRTUAL_MODULE_ID } from './constant'
 import { Context } from './context'
 
-export default (options?: VitePluginUniCdnOption): Plugin => {
+export function VitePluginUniCdn(options?: VitePluginUniCdnOption): Plugin {
   const ctx = new Context(options)
 
   let plugin: Plugin = {
