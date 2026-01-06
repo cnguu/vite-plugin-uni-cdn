@@ -1,9 +1,11 @@
+import type { SFCBlock } from '@vue/compiler-sfc'
 import type AliOSS from 'ali-oss'
 import type { TransformResult } from 'rollup'
 import type { ResolvedConfig, UserConfig } from 'vite'
 import type { AliOSSModule, VitePluginUniCdnOption } from './type'
 import fsPromises from 'node:fs/promises'
 import path from 'node:path'
+import { parse as vueParse } from '@vue/compiler-sfc'
 import { createFilter, normalizePath } from 'vite'
 import { POSTCSS_PLUGIN_NAME } from './constant'
 import { checkAliOSSInstalled } from './oss/ali'
@@ -178,14 +180,15 @@ export class Context {
     if (!this.sourceDirAbs || !this.assetDir || !code) {
       return { code }
     }
-
     const [filepath] = id.split('?', 2)
     if (!this.filter(filepath)) {
       return { code }
     }
-
-    const transformed = this.replaceStaticToCdn(code)
-    return { code: transformed }
+    if (id.endsWith('.vue')) {
+      return this.processVueSfc(code)
+    }
+    const transformedCode = this.replaceStaticToCdn(code)
+    return { code: transformedCode }
   }
 
   async closeBundle(): Promise<void> {
@@ -194,6 +197,32 @@ export class Context {
     }
     await this.uploadAliOSS()
     await this.deleteOutputFiles()
+  }
+
+  private processVueSfc(code: string): TransformResult {
+    let transformedCode = code
+    try {
+      const sfc = vueParse(code)
+      transformedCode = this.processSfcBlock(transformedCode, sfc.descriptor.template)
+      transformedCode = this.processSfcBlock(transformedCode, sfc.descriptor.scriptSetup)
+      transformedCode = this.processSfcBlock(transformedCode, sfc.descriptor.script)
+    }
+    catch (error) {
+      this.logger.error('解析 Vue SFC 失败', error as Error)
+      transformedCode = this.replaceStaticToCdn(code)
+    }
+    return { code: transformedCode }
+  }
+
+  private processSfcBlock(code: string, block: SFCBlock | null): string {
+    if (!block) {
+      return code
+    }
+    const { content, loc } = block
+    const transformedContent = this.replaceStaticToCdn(content)
+    return code.slice(0, loc.start.offset)
+      + transformedContent
+      + code.slice(loc.end.offset)
   }
 
   private replaceStaticToCdn(

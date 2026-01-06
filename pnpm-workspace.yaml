@@ -12,6 +12,7 @@ catalog:
   '@dcloudio/vite-plugin-uni': 3.0.0-4080720251210001
   '@types/ali-oss': 6.16.13
   '@types/node': 22.19.1
+  '@vue/compiler-sfc': 3.4.21
   ali-oss: 6.23.0
   bumpp: 10.3.1
   cross-env: 10.1.0
