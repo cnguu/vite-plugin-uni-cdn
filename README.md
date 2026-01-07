@@ -30,7 +30,17 @@ export default defineConfig({
 })
 ```
 
-> 目前只支持绝对路径，如 `/static/xxx/xxx.png`
+在 `ts` 中使用辅助函数
+
+```typescript
+import { withCdn } from 'virtual:vite-plugin-uni-cdn'
+
+console.log(withCdn('/static/cdn/7.png'))
+```
+
+> 注意：
+> 1. 目前只支持绝对路径，如 `/static/xxx/xxx.png`
+> 2. 微信小程序平台会被 uni-app 自动转成 Base64，无法被替换为 cdn 链接
 
 ## 参数
 
