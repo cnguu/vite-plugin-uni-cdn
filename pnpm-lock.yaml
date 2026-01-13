@@ -39,9 +39,6 @@ catalogs:
     '@types/node':
       specifier: 22.19.1
       version: 22.19.1
-    '@vue/compiler-sfc':
-      specifier: 3.4.21
-      version: 3.4.21
     ali-oss:
       specifier: 6.23.0
       version: 6.23.0
@@ -54,6 +51,9 @@ catalogs:
     eslint:
       specifier: 9.39.1
       version: 9.39.1
+    magic-string:
+      specifier: 0.30.21
+      version: 0.30.21
     rimraf:
       specifier: 6.1.2
       version: 6.1.2
@@ -113,9 +113,9 @@ importers:
 
   packages/core:
     dependencies:
-      '@vue/compiler-sfc':
+      magic-string:
         specifier: 'catalog:'
-        version: 3.4.21
+        version: 0.30.21
     devDependencies:
       '@types/ali-oss':
         specifier: 'catalog:'
@@ -8716,7 +8716,7 @@ snapshots:
       browserslist: 4.28.1
       browserslist-to-esbuild: 2.1.1(browserslist@4.28.1)
       core-js: 3.47.0
-      magic-string: 0.30.11
+      magic-string: 0.30.21
       regenerator-runtime: 0.14.1
       systemjs: 6.15.1
       terser: 5.44.1

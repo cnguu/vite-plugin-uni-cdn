@@ -57,7 +57,7 @@
     }
   },
   "dependencies": {
-    "@vue/compiler-sfc": "catalog:"
+    "magic-string": "catalog:"
   },
   "devDependencies": {
     "@types/ali-oss": "catalog:",

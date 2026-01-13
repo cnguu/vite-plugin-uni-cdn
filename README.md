@@ -27,6 +27,10 @@ export default defineConfig({
     }),
     Uni(),
   ],
+  build: {
+    // 控制 sourcemap 生成
+    sourcemap: true,
+  },
 })
 ```
 

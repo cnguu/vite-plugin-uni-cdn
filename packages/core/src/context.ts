@@ -1,11 +1,10 @@
-import type { SFCBlock } from '@vue/compiler-sfc'
 import type AliOSS from 'ali-oss'
 import type { TransformResult } from 'rollup'
 import type { ResolvedConfig, UserConfig } from 'vite'
 import type { AliOSSModule, VitePluginUniCdnOption } from './type'
 import fsPromises from 'node:fs/promises'
 import path from 'node:path'
-import { parse as vueParse } from '@vue/compiler-sfc'
+import MagicString from 'magic-string'
 import { createFilter, normalizePath } from 'vite'
 import { POSTCSS_PLUGIN_NAME } from './constant'
 import { checkAliOSSInstalled } from './oss/ali'
@@ -26,6 +25,7 @@ export class Context {
   sourceDirAbs: string = ''
   assetDir: string = ''
   outputDir: string = ''
+  enableSourcemap: boolean = false
 
   replaceUrlCache: Map<string, string> = new Map<string, string>()
 
@@ -149,6 +149,8 @@ export class Context {
     )
 
     this.logger.log(`输出目录: ${this.outputDir}`)
+
+    this.enableSourcemap = !!resolvedConfig.build.sourcemap
   }
 
   async buildStart() {
@@ -177,18 +179,10 @@ export class Context {
   }
 
   transform(code: string, id: string): TransformResult {
-    if (!this.sourceDirAbs || !this.assetDir || !code) {
-      return { code }
+    const originalFilePath = id.split('?')[0]
+    if (originalFilePath.endsWith('.vue')) {
+      return this.processVueSfc(code, id)
     }
-    const [filepath] = id.split('?', 2)
-    if (!this.filter(filepath)) {
-      return { code }
-    }
-    if (id.endsWith('.vue')) {
-      return this.processVueSfc(code)
-    }
-    const transformedCode = this.replaceStaticToCdn(code)
-    return { code: transformedCode }
   }
 
   async closeBundle(): Promise<void> {
@@ -199,47 +193,53 @@ export class Context {
     await this.deleteOutputFiles()
   }
 
-  private processVueSfc(code: string): TransformResult {
-    let transformedCode = code
+  private processVueSfc(code: string, id: string): TransformResult {
+    const rawFileName = path.basename(id).replace(/[\s\\/:*?"<>|]/g, '-')
+    const s = new MagicString(code)
     try {
-      const sfc = vueParse(code)
-      transformedCode = this.processSfcBlock(transformedCode, sfc.descriptor.template)
-      transformedCode = this.processSfcBlock(transformedCode, sfc.descriptor.scriptSetup)
-      transformedCode = this.processSfcBlock(transformedCode, sfc.descriptor.script)
+      const regExp = new RegExp(
+        `(['"])(${escapeRegExp(this.assetDir)}[^'"]*)\\1`,
+        'g',
+      )
+      const matches: RegExpExecArray[] = []
+      let match: RegExpExecArray | null
+      while (true) {
+        match = regExp.exec(code)
+        if (match === null) {
+          break
+        }
+        matches.push(match)
+      }
+      for (let i = matches.length - 1; i >= 0; i--) {
+        const match = matches[i]
+        const [fullMatch, quote, originalPath] = match
+        const start = match.index
+        const end = start + fullMatch.length
+        try {
+          const replacement = this.codeReplaceMatch(originalPath, fullMatch, quote)
+          s.overwrite(start, end, replacement)
+        }
+        catch (error) {
+          this.logger.error(`处理 vue 文件匹配项失败: ${fullMatch}`, error as Error)
+        }
+      }
+      const result: TransformResult = {
+        code: s.toString(),
+      }
+      if (this.enableSourcemap) {
+        result.map = s.generateMap({
+          hires: true,
+          source: id,
+          file: `${rawFileName}.map`,
+          includeContent: true,
+        })
+      }
+      return result
     }
     catch (error) {
-      this.logger.error('解析 Vue SFC 失败', error as Error)
-      transformedCode = this.replaceStaticToCdn(code)
+      this.logger.error(`处理 Vue SFC 失败，跳过该文件处理: ${id}`, error as Error)
+      return { code }
     }
-    return { code: transformedCode }
-  }
-
-  private processSfcBlock(code: string, block: SFCBlock | null): string {
-    if (!block) {
-      return code
-    }
-    const { content, loc } = block
-    const transformedContent = this.replaceStaticToCdn(content)
-    return code.slice(0, loc.start.offset)
-      + transformedContent
-      + code.slice(loc.end.offset)
-  }
-
-  private replaceStaticToCdn(
-    code: string,
-  ): string {
-    return code.replace(new RegExp(
-      `(['"])(${escapeRegExp(this.assetDir)}[^'"]*)\\1`,
-      'g',
-    ), (match: string, quote: string, originalPath: string) => {
-      try {
-        return this.codeReplaceMatch(originalPath, match, quote)
-      }
-      catch (error) {
-        this.logger.error(`处理字符串失败`, error as Error)
-        return match
-      }
-    })
   }
 
   private codeReplaceMatch(originalPath: string, match: string, quote: string): string {
